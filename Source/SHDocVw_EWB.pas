@@ -105,7 +105,7 @@ const
 
 {$IFDEF USE_OleCtrlsFix}
 type
-  TOleControl = class(OleCtrlsFix.TOleControlFix);
+  TAlxOleControl = class(OleCtrlsFix.TOleControlFix);
 {$ENDIF}
 
 // *********************************************************************//
@@ -1150,7 +1150,7 @@ type
   TEWB_V1Quit = procedure(ASender: TObject; var Cancel: WordBool) of object;
   TEWB_V1PropertyChange = procedure(ASender: TObject; const Property_: WideString) of object;
 
-  TEWB_V1 = class(TOleControl)
+  TEWB_V1 = class(TAlxOleControl)
   private
     FOnBeforeNavigate: TEWB_V1BeforeNavigate;
     FOnNavigateComplete: TEWB_V1NavigateComplete;
@@ -1301,7 +1301,7 @@ type
     const bstrUrlContext: WideString;
     const bstrUrl: WideString) of object;
 
-  TEWB = class(TOleControl)
+  TEWB = class(TAlxOleControl)
   private
     FOnStatusTextChange: TEWBStatusTextChange;
     FOnProgressChange: TEWBProgressChange;

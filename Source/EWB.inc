@@ -74,13 +74,13 @@ You may use, change or modify the component under 4 conditions:
 {.$DEFINE USE_EwbDDE}
 
 // Enable MSHTML events (MSHTMLEvents.pas)
-{.$DEFINE Enable_EwbMSHTMLEvents}
+{DEFINE Enable_EwbMSHTMLEvents}
 
 // Enable Mouse (OnEnter, OnLeave) Events  in TEmbeddedWB (D5, D6, D7 only)
 {.$DEFINE Enable_MouseEnterLeaveEvents}
 
 // Enable OleCtrls Fix (experimental)
-{.$DEFINE USE_OleCtrlsFix}
+{$DEFINE USE_OleCtrlsFix}
 
 // Enable Debugging
 {.$DEFINE Enable_Debug}

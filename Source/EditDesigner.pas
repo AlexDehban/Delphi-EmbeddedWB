@@ -1,4 +1,4 @@
-//***********************************************************
+﻿//***********************************************************
 //                        TEditDesigner                     *
 //                                                          *
 //                       For Delphi                         *
@@ -47,8 +47,7 @@ interface
 {$I EWB.inc}
 
 uses
-{$IFDEF USE_Extras}EwbAcc, Graphics, {$ENDIF}
-  EmbeddedWB, ActiveX, MSHTML_EWB, Classes, Windows;
+{$IFDEF USE_Extras}EwbAcc, Graphics, {$ENDIF} Vcl.Forms, EmbeddedWB, ActiveX, MSHTML_EWB, Classes, Windows, Vcl.Controls, Vcl.StdCtrls, Vcl.Dialogs;
 
 const
   S_OK = 0;
@@ -121,7 +120,7 @@ type
                      // at a stage earlier than the ondragstart event.
                      // http://msdn.microsoft.com/en-us/library/aa704052(VS.85).aspx
       )
-
+      procedure FrmCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
     bDesignMode: Boolean;
     bConnected: Boolean;
@@ -148,7 +147,9 @@ type
     FPreDrag: TPreDrag;
     FSnapRect: TSnapRect;
     FTranslateAccelerator: TTranslateAccelerator;
+    FShowDetails: Boolean;
     procedure SetAbout(Value: string);
+
   protected
       {IHTMLEditHost}
     function SnapRect(const pIElement: IHTMLElement; var prcNew: TRECT; eHandle: _ELEMENT_CORNER): HRESULT; stdcall;
@@ -162,6 +163,7 @@ type
     procedure Loaded; override;
 
   public
+    LastElement: IHTMLElement;
     procedure SetDesignModeOff;
     procedure SetDesignModeOn;
     function ConnectDesigner: integer;
@@ -174,7 +176,7 @@ type
     function GetHTMLDoc2FromWB: IHTMLDocument2;
     function RGBToBGR(RGB: TColor): Integer;
     function ColorStr(RGB: TColor): string;
-    procedure InsertHyperlink;
+    procedure InsertHyperlinkWithAPI;
     procedure InsertImage;
     procedure InsertRadioButton;
     procedure SetFontBold;
@@ -183,6 +185,33 @@ type
     procedure ExecCommand(Command: Widestring; ShowUI: Boolean; Value: Integer);
     procedure InsertHTML(HTML: string);
     function GetPageProperties: TStrings;
+    //-------------------Added By Ali_Dehban "begin"
+    procedure SetFont(AFont: string);
+    procedure SetFontSize(ASize: Integer);
+    procedure SetForeColor(AColor: TColor);
+    procedure SetBackColor(AColor: TColor);
+    procedure Indent;
+    procedure OutDent;
+    procedure JustifyLeft;
+    procedure JustifyRight;
+    procedure JustifyCenter;
+    procedure JustifyFull;
+    procedure Numbering;
+    procedure Bullets;
+    function InsertHorizontalLine(const ID: WideString = ''): Boolean;
+    procedure Cut;
+    procedure Copy;
+    procedure Paste;
+    procedure Undo;
+    procedure Redo;
+    function FindDialog: Boolean;
+    procedure SuperScript;
+    procedure SubScript;
+    procedure StrikeThrough;
+    procedure RemoveFormat;
+    function InsertHyperlink(AOwner: TComponent): Integer;
+
+    //-------------------Added By Ali_Dehban "end"
 {$ENDIF}
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -295,12 +324,18 @@ end;
 
 constructor TEditDesigner.Create;
 begin
-  FAbout := 'TEditDesigner - from http://www.bsalsa.com/';
+  FAbout := 'TEditDesigner - adehban@gmail.com';
   FEnable := True;
 {$IFDEF USE_Extras}
   sl := TStringList.Create;
 {$ENDIF}
   inherited;
+end;
+
+procedure TEditDesigner.Cut;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('cut', False, 0);
 end;
 
 destructor TEditDesigner.Destroy;
@@ -339,11 +374,35 @@ begin
     Result := FSnapRect(pIElement, prcNew, eHandle);
 end;
 
+procedure TEditDesigner.StrikeThrough;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('strikeThrough', False, 0);
+end;
+
+procedure TEditDesigner.SubScript;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('subscript', False, 0);
+end;
+
+procedure TEditDesigner.SuperScript;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('superscript', False, 0);
+end;
+
 function TEditDesigner.PreDrag: HRESULT;
 begin
   Result := S_OK;
   if Assigned(FPreDrag) and FEnable then
     Result := FPreDrag;
+end;
+
+procedure TEditDesigner.Paste;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('paste', False, 0);
 end;
 
 function TEditDesigner.PostEditorEventNotify(inEvtDispId: Integer;
@@ -446,6 +505,12 @@ begin
   end;
 end;
 
+procedure TEditDesigner.Undo;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('undo', False, 0);
+end;
+
 function TEditDesigner.ConnectDesigner: integer;
 begin
   Result := S_FALSE;
@@ -467,6 +532,18 @@ begin
     else
       bConnected := True;
   end;
+end;
+
+procedure TEditDesigner.Copy;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('Copy', False, 0);
+end;
+
+procedure TEditDesigner.Redo;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('redo', False, 0);
 end;
 
 function TEditDesigner.RemoveDesigner: integer;
@@ -492,6 +569,12 @@ begin
       bConnected := false;
     SetDesignModeOff;
   end;
+end;
+
+procedure TEditDesigner.RemoveFormat;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('removeFormat', False, 0);
 end;
 
 procedure TEditDesigner.SetDesignModeOn;
@@ -540,6 +623,12 @@ begin
   Exit;
 end;
 
+procedure TEditDesigner.SetBackColor(AColor: TColor);
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('backColor', False, AColor);
+end;
+
 {$IFDEF USE_Extras}
 
 function TEditDesigner.GetHTMLDoc2FromWB: IHTMLDocument2;
@@ -556,6 +645,18 @@ begin
     Result := (GetHTMLDoc2FromWB as IPersistFile).Load(PWideChar(FileName), 0)
   else
     Result := E_FAIL;
+end;
+
+procedure TEditDesigner.Numbering;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('insertOrderedList', False, 0);
+end;
+
+procedure TEditDesigner.OutDent;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('Outdent', False, 0);
 end;
 
 function TEditDesigner.SaveToFile(FileName: WideString): HRESULT;
@@ -582,9 +683,39 @@ begin
     Result := E_FAIL;
 end;
 
+procedure TEditDesigner.JustifyCenter;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('JustifyCenter', False, 0);
+end;
+
+procedure TEditDesigner.JustifyFull;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('JustifyFull', False, 0);
+end;
+
+procedure TEditDesigner.JustifyLeft;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('JustifyLeft', False, 0);
+end;
+
+procedure TEditDesigner.JustifyRight;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('JustifyRight', False, 0);
+end;
+
 function TEditDesigner.RGBToBGR(RGB: TColor): Integer;
 begin
   Result := (RGB and $000000FF) shl 16 + (RGB and $0000FF00) + (RGB and $00FF0000) shr 16;
+end;
+
+procedure TEditDesigner.Bullets;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('insertUnorderedList', False, 0);
 end;
 
 function TEditDesigner.ColorStr(RGB: TColor): string;
@@ -598,7 +729,183 @@ begin
     GetHTMLDoc2FromWB.execCommand(Command, showUI, Value);
 end;
 
-procedure TEditDesigner.InsertHyperlink;
+function TEditDesigner.FindDialog: Boolean;
+const
+  CGID_MSHTML: TGUID = '{DE4BA900-59CA-11CF-9592-444553540000}';
+var
+  CommandTarget: IOleCommandTarget;
+  vaIn, vaOut: OleVariant;
+  hr: HRESULT;
+begin
+  Result := False;
+  if Assigned(FEmbeddedWB) then
+  try
+    CommandTarget := (FEmbeddedWB.GetActiveFrame as IOleCommandTarget);
+    hr := CommandTarget.Exec(@CGID_MSHTML, 67, OLECMDEXECOPT_DODEFAULT, vaIn, vaOut);
+    Result := SUCCEEDED(hr)
+  except
+  end
+end;
+
+procedure TEditDesigner.FrmCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+  if (Sender as TForm).ModalResult = mrOk then begin
+    if Trim(TEdit((Sender as TForm).FindComponent('EdtUrl')).Text) = '' then begin
+      ShowMessage('Url cannot be empty.');
+      CanClose := False;
+    end;
+    if Trim(TEdit((Sender as TForm).FindComponent('EdtDisplay')).Text) = '' then begin
+      CanClose := False;
+      ShowMessage('Display text cannot be empty!');
+    end;
+  end;
+end;
+
+function TEditDesigner.InsertHyperlink(AOwner: TComponent): Integer;
+var
+  LvEntryForm: TForm;
+  LvLastTopPosition: Integer;
+  LvHrefText, LvTarget, LvTitle, LvUrlType, LvUrl, LvDisplayText: string;
+  LvTempElement: IHTMLElement;
+  I: Integer;
+  Procedure AddEditBox(ALabelCaption, ALabelName, AEditBoxName: string; AIsUrl: Boolean; ATextHint: string = '');
+  var
+    LvLabel: TLabel;
+    LvEditBox: TEdit;
+    LvComboBoxUrlType: TComboBox;
+  begin
+    LvLabel := TLabel.Create(LvEntryForm);
+    LvLabel.Parent := LvEntryForm;
+    LvLabel.Top := LvLastTopPosition + 10;
+    LvLabel.Left := 10;
+    LvLabel.Name := ALabelName;
+    LvLabel.Caption := ALabelCaption;
+
+    if AIsUrl then begin
+      LvComboBoxUrlType := TComboBox.Create(LvEntryForm);
+      LvComboBoxUrlType.Parent := LvEntryForm;
+      LvComboBoxUrlType.Top := LvLastTopPosition + 10;
+      LvComboBoxUrlType.Left := 90;
+      LvComboBoxUrlType.Width := 70;
+      LvComboBoxUrlType.Items.Clear;
+      LvComboBoxUrlType.Items.Add('http://');
+      LvComboBoxUrlType.Items.Add('https://');
+      LvComboBoxUrlType.Items.Add('ftp://');
+      LvComboBoxUrlType.Items.Add('ftps://');
+      LvComboBoxUrlType.Items.Add('mailto:');
+      LvComboBoxUrlType.Name := 'ComboBoxUrl';
+      LvComboBoxUrlType.Style := csDropDownList;
+      LvComboBoxUrlType.ItemIndex := 0;
+    end;
+
+    LvEditBox := TEdit.Create(LvEntryForm);
+    LvEditBox.Parent := LvEntryForm;
+    if AIsUrl then begin
+      LvEditBox.Left := LvComboBoxUrlType.Left + LvComboBoxUrlType.Width + 2 ;
+      LvEditBox.Width := 178;
+    end else begin
+      LvEditBox.Left := 90;
+      LvEditBox.Width := 250;
+    end;
+    LvEditBox.Top := LvLastTopPosition + 10;
+    LvEditBox.Name := AEditBoxName;
+    LvEditBox.Text := '';
+    LvEditBox.TextHint := ATextHint;
+    Inc(LvLastTopPosition, LvEditBox.Height + 5);
+  end;
+  procedure AddComboBox(ALabelCaption, AItems: string);
+  var
+    LvLabel: TLabel;
+    LvComboBox: TComboBox;
+  begin
+    LvLabel := TLabel.Create(LvEntryForm);
+    LvLabel.Parent := LvEntryForm;
+    LvLabel.Top := LvLastTopPosition + 10;
+    LvLabel.Left := 10;
+    LvLabel.Caption := ALabelCaption;
+    LvLabel.Name := 'LblTarget';
+
+    LvComboBox:= TComboBox.Create(LvEntryForm);
+    LvComboBox.Parent := LvEntryForm;
+    LvComboBox.Top := LvLastTopPosition + 10;
+    LvComboBox.Left := 90;
+    LvComboBox.Items.Delimiter := ',';
+    LvComboBox.Items.StrictDelimiter := True;
+    LvComboBox.Items.DelimitedText := AItems;
+    LvComboBox.Style := csDropDownList;
+    LvComboBox.ItemIndex := 0;
+    LvComboBox.Width := 250;
+    LvComboBox.Name:= 'CmbTarget';
+    Inc(LvLastTopPosition, LvComboBox.Height + 5);
+  end;
+  procedure AddCommonButtons;
+  var
+    LvBtnOk, LvBtnCancel: TButton;
+  begin
+    LvBtnOk := TButton.Create(LvEntryForm);
+    LvBtnOk.Parent := LvEntryForm;
+    LvBtnOk.Top := LvLastTopPosition + 10;
+    LvBtnOk.Left := 223;
+    LvBtnOk.Width := 70;
+    LvBtnOk.Name := 'BtnOk';
+    LvBtnOk.ModalResult := mrOk;
+    LvBtnOk.Caption := 'Ok';
+
+    LvBtnCancel := TButton.Create(LvEntryForm);
+    LvBtnCancel.Parent := LvEntryForm;
+    LvBtnCancel.Top := LvLastTopPosition + 10;
+    LvBtnCancel.Left := 298;
+    LvBtnCancel.Width := 70;
+    LvBtnCancel.Name := 'BtnCancel';
+    LvBtnCancel.ModalResult := mrCancel;
+    LvBtnCancel.Caption := 'Cancel';
+  end;
+begin
+  LvLastTopPosition := 0;
+  LvEntryForm := TForm.Create(Self);
+  with LvEntryForm do begin
+    try
+      Height := 180;
+      Width := 378;
+      BorderStyle := bsDialog;
+      Position := poOwnerFormCenter;
+      OnCloseQuery := FrmCloseQuery;
+      AddEditBox('Url: ', 'LblUrl', 'EdtUrl', True, 'Enter url');
+      AddEditBox('Text to Display: ', 'LblDisplay', 'EdtDisplay', False, 'Enter display text');
+      AddEditBox('Title: ', 'LblTitle', 'EdtTitle', False, 'Enter title');
+      AddComboBox('Target', 'None,New Window');
+      AddCommonButtons;
+      if ShowModal = mrOk then begin
+        if (TEdit(LvEntryForm.FindComponent('EdtUrl')) <> nil) and (Trim(TEdit(LvEntryForm.FindComponent('EdtUrl')).Text) <> '') then begin
+          LvTarget := TComboBox(LvEntryForm.FindComponent('CmbTarget')).Text;
+          if (LvTarget = '') or (LvTarget = 'None') then
+            LvTarget := '_self'
+          else if LvTarget = 'New Window' then
+            LvTarget := '_blank';
+          if Trim(TEdit(LvEntryForm.FindComponent('EdtTitle')).Text) <> '' then
+            LvTitle := 'title='+ Trim(TEdit(LvEntryForm.FindComponent('EdtTitle')).Text);
+          LvUrlType := TComboBox(LvEntryForm.FindComponent('ComboBoxUrl')).Text;
+          for I := 0 to Pred(TComboBox(LvEntryForm.FindComponent('ComboBoxUrl')).Items.Count) do begin
+            LvUrl := StringReplace(Trim(TEdit(LvEntryForm.FindComponent('EdtUrl')).Text), TComboBox(LvEntryForm.FindComponent('ComboBoxUrl')).Items[I], '', [rfIgnoreCase]);
+          end;
+          LvDisplayText := Trim(TEdit(LvEntryForm.FindComponent('EdtDisplay')).Text);
+          LvHrefText := '<p><a '+ LvTitle +' href="' + LvUrlType + LvUrl + '" target="' + LvTarget + '">' + LvDisplayText + '</a></p>';
+
+          LastElement := FEmbeddedWB.Doc3.getElementById('100');
+          if (Assigned(FEmbeddedWB)) and (Assigned(LastElement)) then begin
+            LastElement.insertAdjacentHTML('beforebegin', LvHrefText);
+            LastElement.outerHTML := '';
+          end;
+        end;
+      end;
+    finally
+      Result := ModalResult;
+      Free;
+    end;
+  end;
+end;
+
+procedure TEditDesigner.InsertHyperlinkWithAPI;
 begin
   if Assigned(FEmbeddedWB) then
     ExecCommand('CreateLink', True, 0);
@@ -616,6 +923,12 @@ begin
     ExecCommand('InsertInputRadio', True, 0);
 end;
 
+procedure TEditDesigner.SetFont(AFont: string);
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('FontName', False, AFont);
+end;
+
 procedure TEditDesigner.SetFontBold;
 begin
   if Assigned(FEmbeddedWB) then
@@ -628,10 +941,47 @@ begin
     ExecCommand('Underline', False, 0);
 end;
 
+procedure TEditDesigner.SetForeColor(AColor: TColor);
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('foreColor', False, AColor);
+end;
+
 procedure TEditDesigner.SetFontItalic;
 begin
   if Assigned(FEmbeddedWB) then
     ExecCommand('Italic', False, 0);
+end;
+
+procedure TEditDesigner.Indent;
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('indent', False, 0);
+end;
+
+function TEditDesigner.InsertHorizontalLine(const ID: WideString): Boolean;
+const
+  CGID_MSHTML: TGUID = '{DE4BA900-59CA-11CF-9592-444553540000}';
+var
+  CommandTarget: IOleCommandTarget;
+  vaIn, vaOut: OleVariant;
+  hr: HRESULT;
+begin
+  Result := False;
+  if Assigned(FEmbeddedWB) then
+  try
+    CommandTarget :=  (FEmbeddedWB.GetActiveFrame as IOleCommandTarget);
+    vaIn := ID;
+    hr := CommandTarget.Exec(@CGID_MSHTML, 2150, 0, vaIn, vaOut);
+    Result := SUCCEEDED(hr)
+  except
+  end
+end;
+
+procedure TEditDesigner.SetFontSize(ASize: Integer);
+begin
+  if Assigned(FEmbeddedWB) then
+    GetHTMLDoc2FromWB.execCommand('FontSize', False, ASize);
 end;
 
 procedure TEditDesigner.InsertHTML(HTML: string);
@@ -700,10 +1050,8 @@ begin
           Exit;
         end;
       end;
-  end
-  else
-    if Assigned(FOnError) then
-      FOnError(E_FAIL, 'Please assign a TEmbeddedWB and load a document.');
+  end else if Assigned(FOnError) then
+              FOnError(E_FAIL, 'Please assign a TEmbeddedWB and load a document.');
   Result := sl;
 end;
 {$ENDIF}

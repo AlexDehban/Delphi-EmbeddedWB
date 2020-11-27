@@ -47,7 +47,8 @@ uses
   SecurityManager, SendMail_For_Ewb, UrlHistory, Edithost, EditDesigner,
   IEAddress, IEDownload, IEMultiDownload, EwbCore, EmbeddedWB, EwbControlComponent, IECache, Browse4Folder,
   FileExtAssociate, LinksLabel, UI_Less,
-{$IFDEF DELPHI6_UP}EwbEventsComp, EwbBehaviorsComp, {$ENDIF}EwbActns;
+{$IFDEF DELPHI6_UP}EwbEventsComp, EwbBehaviorsComp, {$ENDIF}EwbActns,
+  System.Actions;
 
 procedure Register;
 

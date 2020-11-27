@@ -33,8 +33,8 @@ var
   Temp: TVarData;
 begin
   GetProperty(Index, Temp);
-// Result := IDispatch(Temp.VDispatch); ***** Change to:
-  Pointer(Result) := Temp.VDispatch; //this avoids the extra AddRef
+  Result := IDispatch(Temp.VDispatch); //***** Change to:
+//  Pointer(Result) := Temp.VDispatch; //this avoids the extra AddRef
 end;
 
 function TOleControlFix.GetIUnknownProp(Index: Integer): IUnknown;
@@ -42,8 +42,8 @@ var
   Temp: TVarData;
 begin
   GetProperty(Index, Temp);
-// Result := IDispatch(Temp.VUnknown); ***** Change to:
-  Pointer(Result) := Temp.VUnknown; //this avoids the extra AddRef
+  Result := IDispatch(Temp.VUnknown); //***** Change to:
+//  Pointer(Result) := Temp.VUnknown; //this avoids the extra AddRef
 end;
 end.
 
